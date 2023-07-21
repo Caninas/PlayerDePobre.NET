@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:model="clr-namespace:PlayerDePobre.Model"
+             xmlns:viewmodel="clr-namespace:PlayerDePobre.ViewModel"
+             x:DataType="viewmodel:MusicasVM"
+             Title="{Binding Title}"
+             x:Class="PlayerDePobre.MainPage">
+
+
+    <Grid BackgroundColor="#100238">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="160"/>
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <!--Linha de Cima-->
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <VerticalStackLayout>
+                <Button Text="Add"
+                        Command="{Binding SelecionarPastaCommand}"
+                        IsEnabled="{Binding IsNotBusy}"
+                        />
+
+                <CollectionView Grid.Column="0" ItemsSource="{Binding Playlists}" SelectionMode="Single">
+                    <!--Playlists-->
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="model:Playlist">
+                            <Label Text="{Binding Nome}" 
+                                            FontSize="16">
+                                
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer CommandParameter="{Binding .}"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MusicasVM}}, Path=SelecionarPlaylistCommand}"/>
+                                </Label.GestureRecognizers> 
+                            </Label>
+
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+
+
+            <!--Listagem Musicas-->
+            <CollectionView Grid.Column="1" 
+                            SelectionMode="Single"
+                            ItemsSource="{Binding Musicas}">
+                <!--Listagem Musicas-->
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="model:Musica">
+                        <Grid  Padding="5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="40"/>
+                                <ColumnDefinition Width="60*"/>
+                                <ColumnDefinition Width="40*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Image
+                                Source="{Binding Cover}"
+                                    Grid.Column="0"
+                                />
+
+                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Margin="13,0,0,0">
+                                <Label Text="{Binding Titulo}" FontSize="17" FontAttributes="Bold" LineBreakMode="HeadTruncation"/>
+                                <Label Text="{Binding Artista}" FontSize="13" LineBreakMode="HeadTruncation"/>
+                            </VerticalStackLayout>
+
+                            <Label Grid.Column="2" Text="{Binding Extensao}" VerticalOptions="Center" HorizontalOptions="Center" LineBreakMode="NoWrap" Margin="0,0,0,0"/>
+
+
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+
+        <!--Linha de Baixo-->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Image Grid.Column="0"
+                    Source="{Binding CoverAtual}"
+                    HorizontalOptions="Fill"
+                    
+                    VerticalOptions="Fill" />
+
+
+            <HorizontalStackLayout Grid.Column="1" HorizontalOptions="Center">
+                <Button
+                    Text="Play"
+                    SemanticProperties.Hint="Counts the number of times you click"
+                    Command="{Binding TocarMusicaCommand}"
+                    BackgroundColor="#34eb71" 
+                    />
+
+                <Button
+                    Text="-"
+                    SemanticProperties.Hint="Counts the number of times you click"
+                    BackgroundColor="#34eb71" 
+                    />
+                <!--Clicked="AlterarVolume"-->
+                <!--x:Name="ProximoBtn"-->
+
+                <Button
+                    x:Name="CounterBtn3"
+                    Text="+"
+                    SemanticProperties.Hint="Counts the number of times you click"
+                    BackgroundColor="#34eb71"
+                />
+                <!--Clicked="AlterarVolume"-->
+                <Image
+                    x:Name="ImgAlbum"
+                    Source="dotnet_bot.png"
+                    SemanticProperties.Description="Cute dot net bot waving hi to you!"
+                    HeightRequest="200"
+                    HorizontalOptions="Center"
+                />
+            </HorizontalStackLayout>
+        </Grid>
+    </Grid>
+</ContentPage>

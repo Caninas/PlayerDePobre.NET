@@ -1,0 +1,13 @@
+﻿using PlayerDePobre.ViewModel;
+
+namespace PlayerDePobre;
+
+public partial class MainPage : ContentPage
+{
+	public MainPage(MusicasVM viewModel)
+	{
+		InitializeComponent();
+		BindingContext = viewModel;
+	}
+}
+
