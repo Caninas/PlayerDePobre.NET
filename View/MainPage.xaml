@@ -1,12 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:model="clr-namespace:PlayerDePobre.Model"
              xmlns:viewmodel="clr-namespace:PlayerDePobre.ViewModel"
              x:DataType="viewmodel:MusicasVM"
              Title="{Binding Title}"
              x:Class="PlayerDePobre.MainPage">
-
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <toolkit:SelectedItemEventArgsConverter x:Key="SelectedItemEventArgsConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
     <Grid BackgroundColor="#100238">
         <Grid.RowDefinitions>
@@ -54,27 +59,33 @@
 
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="model:Musica">
-                        <Grid  Padding="5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="40"/>
-                                <ColumnDefinition Width="60*"/>
-                                <ColumnDefinition Width="40*"/>
-                            </Grid.ColumnDefinitions>
+                        <Frame Padding="0" BorderColor="Crimson" BackgroundColor="#00000000">
+                            <Grid  Margin="5" >
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer NumberOfTapsRequired="2" CommandParameter="{Binding .}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MusicasVM}}, Path=TocarMusicaOnTapCommand}"/>
+                                </Grid.GestureRecognizers>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40"/>
+                                    <ColumnDefinition Width="60*"/>
+                                    <ColumnDefinition Width="40*"/>
+                                </Grid.ColumnDefinitions>
 
-                            <Image
-                                Source="{Binding Cover}"
-                                    Grid.Column="0"
-                                />
+                                <Image
+                                    Source="{Binding Cover}"
+                                        Grid.Column="0"
+                                    />
 
-                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Margin="13,0,0,0">
-                                <Label Text="{Binding Titulo}" FontSize="17" FontAttributes="Bold" LineBreakMode="HeadTruncation"/>
-                                <Label Text="{Binding Artista}" FontSize="13" LineBreakMode="HeadTruncation"/>
-                            </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Margin="13,0,0,0">
+                                    <Label Text="{Binding Titulo}" FontSize="17" FontAttributes="Bold" LineBreakMode="HeadTruncation"/>
+                                    <Label Text="{Binding Artista}" FontSize="13" LineBreakMode="HeadTruncation"/>
+                                </VerticalStackLayout>
 
-                            <Label Grid.Column="2" Text="{Binding Extensao}" VerticalOptions="Center" HorizontalOptions="Center" LineBreakMode="NoWrap" Margin="0,0,0,0"/>
+                                <Label Grid.Column="2" Text="{Binding Extensao}" VerticalOptions="Center" HorizontalOptions="Center" LineBreakMode="NoWrap" Margin="0,0,0,0"/>
 
 
-                        </Grid>
+                            </Grid>
+                        </Frame>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
@@ -88,42 +99,46 @@
             </Grid.ColumnDefinitions>
 
             <Image Grid.Column="0"
-                    Source="{Binding CoverAtual}"
+                    Source="{Binding MusicaAtual.Cover}"
                     HorizontalOptions="Fill"
                     
                     VerticalOptions="Fill" />
 
 
             <HorizontalStackLayout Grid.Column="1" HorizontalOptions="Center">
-                <Button
+                
+                <toolkit:MediaElement  x:Name="MediaElement"
+                                        IsVisible="false" 
+                                       Source="{Binding MusicaAtual.FullPath}"
+                                       ShouldShowPlaybackControls="False">
+
+                    <toolkit:MediaElement.Behaviors>
+                        <toolkit:EventToCommandBehavior
+                            EventName="Loaded"
+                            Command="{Binding InitMediaElementCommand}"
+                            CommandParameter="{Binding Source={x:Reference MediaElement}}"
+                            
+                            />
+                    </toolkit:MediaElement.Behaviors>
+                </toolkit:MediaElement>
+                    <Button
                     Text="Play"
-                    SemanticProperties.Hint="Counts the number of times you click"
                     Command="{Binding TocarMusicaCommand}"
                     BackgroundColor="#34eb71" 
                     />
-
+                
                 <Button
                     Text="-"
-                    SemanticProperties.Hint="Counts the number of times you click"
+                    Command="{Binding AnteriorCommand}"
                     BackgroundColor="#34eb71" 
                     />
-                <!--Clicked="AlterarVolume"-->
-                <!--x:Name="ProximoBtn"-->
 
                 <Button
-                    x:Name="CounterBtn3"
                     Text="+"
-                    SemanticProperties.Hint="Counts the number of times you click"
+                    Command="{Binding ProximoCommand}"
                     BackgroundColor="#34eb71"
                 />
-                <!--Clicked="AlterarVolume"-->
-                <Image
-                    x:Name="ImgAlbum"
-                    Source="dotnet_bot.png"
-                    SemanticProperties.Description="Cute dot net bot waving hi to you!"
-                    HeightRequest="200"
-                    HorizontalOptions="Center"
-                />
+                
             </HorizontalStackLayout>
         </Grid>
     </Grid>

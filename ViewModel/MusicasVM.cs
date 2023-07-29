@@ -1,29 +1,31 @@
-﻿using CommunityToolkit.Maui.Storage;
+﻿using CommunityToolkit.Maui.Core.Primitives;
+using CommunityToolkit.Maui.Storage;
+using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PlayerDePobre.Model;
-using Plugin.Maui.Audio;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Reflection;
-using TagLib.Matroska;
-
+using TagLib;
 
 namespace PlayerDePobre.ViewModel
 {
     public partial class MusicasVM : BaseVM
     {
-        private readonly IAudioManager playersManager;
-        private IAudioPlayer player;
+        public MusicasVM()
+        {
+            Title = "Player de Pobre";
+        }
+
+        MediaElement player;
 
         string pasta_playlists = "";
         string pasta_selecionada = "";
         string pasta_tocando = "";
 
-        string musica_tocando = "";
-        string musica_selecionada = "";
+        int indexMusicaAtual = 0;
 
         bool aleatorio = true;
 
@@ -35,15 +37,24 @@ namespace PlayerDePobre.ViewModel
 
 
         public ObservableCollection<Musica> Musicas { get; set; } = new();
+        public ObservableCollection<Musica> MusicasTocando { get; set; } = new();
         public ObservableCollection<Playlist> Playlists { get; set; } = new();
+
+        [ObservableProperty]
+        string musicaTocando = "";
 
         [ObservableProperty]
         ImageSource coverAtual;
 
-        public MusicasVM(IAudioManager audioManager)
+        [ObservableProperty]
+        Musica musicaAtual;
+
+        [RelayCommand]
+        private void InitMediaElement(MediaElement elemento)
         {
-            Title = "Player de Pobre";
-            this.playersManager = audioManager;
+            player = elemento;
+            player.MediaEnded += (sender, args) => { Proximo(); };
+            player.MediaFailed += (sender, args) => { Proximo(); App.Current.MainPage.DisplayAlert("Erro", "Erro ao tocar música atual", "OK"); };
         }
 
         [RelayCommand]
@@ -66,24 +77,71 @@ namespace PlayerDePobre.ViewModel
         }
 
         [RelayCommand]
-        async Task SelecionarPlaylist(Playlist playlist)
+        Task SelecionarPlaylist(Playlist playlist)
         {
             if (playlist == null || playlist.Path == pasta_selecionada)
             {
-                return;
+                return Task.CompletedTask; ;
             }
 
             LerMusicasPlaylist(playlist.Path);
-            Debug.Write("a");
-            return;
+            return Task.CompletedTask;
         }
 
         [RelayCommand]
-        private void TocarMusica(Musica musica=null)
+        private void TocarMusicaOnTap(Musica musica = null)
         {
-            if (player != null)
+            Debug.Write("a", nameof(musica));
+            if (pasta_selecionada != pasta_tocando)
             {
-                if (!player.IsPlaying)
+                pasta_tocando = pasta_selecionada;
+                MusicasTocando = new(Musicas.ToArray());
+
+            }
+
+            TocarMusicaPath(musica);
+        }
+
+
+        private void AtualizarCamposMusica(Musica musica=null)
+        {
+            if (musica != null)
+            {
+                MusicaAtual = musica;
+                //CoverAtual = musica.Cover;
+            }
+            else
+            {
+                var albumPic = TagLib.File.Create(MusicaTocando).Tag.Pictures;
+
+
+                if (albumPic.Length > 0)
+                {
+                    var memory = new MemoryStream(albumPic[0].Data.Data);
+                    CoverAtual = ImageSource.FromStream(() => memory);
+                }
+                else
+                {
+                    CoverAtual = ImageSource.FromFile("padrao.png");
+                }
+            }
+
+        }
+
+        private void TocarMusicaPath(Musica musica)
+        {                
+            MusicaTocando = musica.FullPath;
+            AtualizarCamposMusica(musica);
+            player.MediaOpened += (sender, args) => { player.Play(); };
+
+        }
+
+        [RelayCommand]
+        private async void TocarMusica(string path=null)
+        {
+            if (MusicaTocando != "")
+            {
+                if (player.CurrentState != MediaElementState.Playing) // is playing
                 {
                     player.Play();
                 }
@@ -96,52 +154,23 @@ namespace PlayerDePobre.ViewModel
             {
                 if (pasta_selecionada != "")
                 {
-                    string path;
-                    if (musica == null) 
+                    MusicasTocando = new(Musicas.ToArray());
+                    pasta_tocando = pasta_selecionada;
+
+                    if (aleatorio)
                     {
-                        if (aleatorio)
-                        {
-                            path = Path.Combine(pasta_selecionada, Musicas[random.Next(Musicas.Count)].NomeOnDisk);
-                        }
-                        else
-                        {
-                            path = Path.Combine(pasta_selecionada, Musicas[0].NomeOnDisk);
-                        }
+                        indexMusicaAtual = random.Next(MusicasTocando.Count);
+                        path = Path.Combine(pasta_selecionada, MusicasTocando[indexMusicaAtual].NomeOnDisk);
                     }
                     else
                     {
-                        path = Path.Combine(pasta_selecionada, musica.NomeOnDisk);
+                        indexMusicaAtual = 0;
+                        path = Path.Combine(pasta_selecionada, MusicasTocando[0].NomeOnDisk);
                     }
 
-                    var memory = new MemoryStream(TagLib.File.Create(path).Tag.Pictures[0].Data.Data);
-                    CoverAtual = ImageSource.FromStream(() => memory);
-                    
-                    player = playersManager.CreatePlayer(System.IO.File.OpenRead(path));
-                    player.Play();
-                }
-            }
-            //return Task.CompletedTask;
-        }
-
-        private void AlterarVolume(object sender, EventArgs e)
-        {
-            if (player != null)
-            {
-                Button btn = sender as Button;
-
-                if (btn.Text == "+")
-                {
-                    if (this.player.Volume < 1)
-                    {
-                        this.player.Volume += 0.1;
-                    }
-                }
-                else if (btn.Text == "-")
-                {
-                    if (this.player.Volume > 0)
-                    {
-                        this.player.Volume -= 0.1;
-                    }
+                    MusicaTocando = path;
+                    AtualizarCamposMusica(MusicasTocando[indexMusicaAtual]);
+                    player.MediaOpened += (sender, args) => { player.Play(); };
                 }
             }
         }
@@ -151,22 +180,40 @@ namespace PlayerDePobre.ViewModel
             await Shell.Current.GoToAsync("ConfigPage");
         }
 
-        private void Anterior(object sender, EventArgs e)
-        {
-
-        }
-
-        private void Proximo(object sender, EventArgs e)
+        [RelayCommand]
+        private void Anterior()
         {
 
         }
 
         [RelayCommand]
-        async Task LerMusicasPlaylist(string pasta)
+        private void Proximo()
+        {
+            if (MusicaTocando != "")
+            {
+                //string path;
+                if (aleatorio)
+                {
+                    indexMusicaAtual = random.Next(MusicasTocando.Count);
+                    //path = Path.Combine(pasta_tocando, MusicasTocando[indexMusicaAtual].NomeOnDisk);
+
+                }
+                else
+                {
+                    //path = Path.Combine(pasta_tocando, MusicasTocando[indexMusicaAtual++].NomeOnDisk);
+                }
+
+                TocarMusicaPath(MusicasTocando[indexMusicaAtual]);
+            }
+            return;
+        }
+
+        [RelayCommand]
+        Task LerMusicasPlaylist(string pasta)
         {
             if (IsBusy)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             IsBusy = true;
@@ -196,12 +243,6 @@ namespace PlayerDePobre.ViewModel
                             thumbTemp.Mutate(x => x.Resize(100, 100));
                             thumbTemp.Save(fullpath);
                             thumbTemp.Dispose();
-
-                            //FileStream outputStream = File.OpenWrite(fullpath);
-
-                            //outputStream.Write(memory.ToArray(), 0, memory.ToArray().Length);
-                            //outputStream.Close();
-
                         }
 
                         thumb = ImageSource.FromFile(fullpath);
@@ -215,7 +256,7 @@ namespace PlayerDePobre.ViewModel
                         thumb = img;
                     }
 
-                    Musicas.Add(new Musica() { Album = tags.Album, Titulo = tags.Title, Artista = tags.FirstPerformer, Cover = img, CoverThumb=thumb, Extensao = extensao, NomeOnDisk = Path.GetFileName(musica)});
+                    Musicas.Add(new Musica() { Album = tags.Album, Titulo = tags.Title, Artista = tags.FirstPerformer, Cover = img, CoverThumb=thumb, Extensao = extensao, FullPath = musica, NomeOnDisk = Path.GetFileName(musica)});
 
 
                 }
@@ -223,7 +264,7 @@ namespace PlayerDePobre.ViewModel
 
             Title = Path.GetFileName(pasta_selecionada);
             IsBusy = false;
-            return;
+            return Task.CompletedTask;
         }
     }
 }

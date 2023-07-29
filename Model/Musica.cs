@@ -10,6 +10,7 @@ namespace PlayerDePobre.Model
         public string Album { get; set; }
         public string Artista { get; set; }
         public string Extensao { get; set; }
+        public string FullPath { get; set; }
         public string NomeOnDisk { get; set; }
         //public ushort Duraçao { get; set; }
     }

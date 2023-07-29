@@ -1,4 +1,5 @@
 ﻿using PlayerDePobre.ViewModel;
+using System.Runtime.CompilerServices;
 
 namespace PlayerDePobre;
 
